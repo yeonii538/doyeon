@@ -1,0 +1,13 @@
+{
+  "name": "team-attendance",
+  "version": "1.0.0",
+  "description": "팀 출퇴근 기록 서버 (Node.js + SQLite, 외부 패키지 없음)",
+  "private": true,
+  "license": "UNLICENSED",
+  "engines": { "node": ">=22.13" },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning server.js",
+    "test": "node --disable-warning=ExperimentalWarning test.js",
+    "backup": "node --disable-warning=ExperimentalWarning scripts/backup.js"
+  }
+}

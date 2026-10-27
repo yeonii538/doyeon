@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>팀 출퇴근 기록</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>팀 출퇴근 기록</h1>
+    <div class="who"><span id="who"></span><button class="btn small" id="btn-logout" hidden>로그아웃</button></div>
+  </header>
+
+  <div class="panel gate" id="gate-load"><p style="margin:0">불러오는 중입니다.</p></div>
+
+  <!-- 로그인 / 가입 -->
+  <div class="panel gate" id="gate-auth" hidden>
+    <div class="authtabs" role="tablist">
+      <button class="tab" role="tab" data-auth="login" aria-selected="true">로그인</button>
+      <button class="tab" role="tab" data-auth="signup" aria-selected="false">가입</button>
+    </div>
+    <form id="auth-form" novalidate>
+      <label class="field" id="a-name-w" hidden>이름 (팀원에게 보이는 이름)<input id="a-name" type="text" maxlength="20" autocomplete="name"></label>
+      <label class="field">이메일<input id="a-email" type="email" autocomplete="username" required></label>
+      <label class="field">비밀번호<input id="a-pw" type="password" autocomplete="current-password" required></label>
+      <label class="field" id="a-pw2-w" hidden>비밀번호 확인<input id="a-pw2" type="password" autocomplete="new-password"></label>
+      <label class="field" id="a-code-w" hidden>가입 코드 (관리자에게 받으세요)<input id="a-code" type="text" autocomplete="off"></label>
+      <p class="hint" id="a-hint"></p>
+      <div id="a-msg"></div>
+      <button class="btn primary" id="a-submit" type="submit">로그인</button>
+    </form>
+  </div>
+
+  <div id="app" hidden>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" data-v="mine" aria-selected="true">내 기록</button>
+      <button class="tab" role="tab" data-v="team" aria-selected="false">팀 현황</button>
+    </div>
+
+    <section id="v-mine">
+      <div class="grid2">
+        <div class="panel" id="today">
+          <div class="date" id="datetxt">&nbsp;</div>
+          <div class="clock mono" id="clock">--:--:--</div>
+          <p class="state" id="statetxt"></p>
+          <button class="punch" id="punch" disabled>출근하기</button>
+          <div id="msg"></div>
+          <div class="daybar" id="daybar"></div>
+          <p class="note">시각은 서버의 시계로 기록되고, 하루에 한 번만 출근할 수 있습니다. 잘못 기록된 시각은 아래 '수정 요청'으로 알려 주세요.</p>
+        </div>
+        <div class="panel">
+          <div class="spread">
+            <div class="monthnav"><button class="btn small" id="m-prev" aria-label="이전 달">‹</button><span class="lbl" id="m-label"></span><button class="btn small" id="m-next" aria-label="다음 달">›</button></div>
+            <div class="legend sub"><span class="dot ok"></span>정상 <span class="dot warn"></span>지각·조퇴 <span class="dot bad"></span>확인 필요</div>
+          </div>
+          <div class="stats" id="m-stats"></div>
+          <div class="cal" id="cal"></div>
+        </div>
+      </div>
+
+      <div class="panel" id="req-panel" hidden></div>
+
+      <div class="panel">
+        <div class="spread"><h2>날짜별 내 기록</h2><div class="sub" id="mine-sum"></div></div>
+        <div class="tablewrap" id="mine-list"></div>
+        <p style="margin:12px 0 0"><button class="btn small" id="btn-req">누락·오기록 수정 요청</button></p>
+      </div>
+
+      <div class="panel">
+        <div class="spread"><h2>팀원과 비교</h2><div class="sub" id="cmp-note"></div></div>
+        <div class="chips" id="cmp-chips"></div>
+        <div class="tablewrap" id="cmp-sum" style="margin-top:14px"></div>
+        <div class="tablewrap" id="cmp-list" style="margin-top:14px"></div>
+      </div>
+
+      <details class="panel" id="settings">
+        <summary><h2>내 설정</h2><span class="sub">표시 이름 · 기준 출퇴근 시각 · 비밀번호 · 수정 요청 현황</span></summary>
+        <div class="formrow">
+          <label class="field">표시 이름<input type="text" id="p-name" maxlength="20"></label>
+          <label class="field">기준 출근<input type="time" id="p-start" step="60"></label>
+          <label class="field">기준 퇴근<input type="time" id="p-end" step="60"></label>
+        </div>
+        <p class="hint">기준 출근 시각보다 늦으면 지각, 기준 퇴근 시각보다 빠르면 조퇴로 표시됩니다.</p>
+        <div class="pills"><button class="btn primary" id="p-save">저장</button></div>
+        <div id="p-msg"></div>
+        <div class="formtitle" style="margin-top:20px">비밀번호 변경</div>
+        <form id="pw-form" class="formrow" novalidate>
+          <input type="text" autocomplete="username" hidden>
+          <label class="field">현재 비밀번호<input type="password" id="pw-cur" autocomplete="current-password"></label>
+          <label class="field">새 비밀번호 (10자 이상)<input type="password" id="pw-new" autocomplete="new-password"></label>
+          <label class="field">새 비밀번호 확인<input type="password" id="pw-new2" autocomplete="new-password"></label>
+        </form>
+        <div class="pills"><button class="btn" id="pw-save">비밀번호 변경</button></div>
+        <div id="pw-msg"></div>
+        <div id="my-reqs" style="margin-top:16px"></div>
+      </details>
+    </section>
+
+    <section id="v-team" hidden>
+      <div class="panel">
+        <div class="spread"><h2>오늘 현황</h2><div class="sub" id="board-sum"></div></div>
+        <div class="board" id="board"></div>
+        <p class="sub" id="board-note"></p>
+      </div>
+      <div class="panel" id="reqs-panel" hidden></div>
+      <div class="panel" id="form-panel" hidden></div>
+
+      <div class="panel">
+        <div class="spread">
+          <div class="monthnav"><button class="btn small" id="t-prev" aria-label="이전 달">‹</button><span class="lbl" id="t-label"></span><button class="btn small" id="t-next" aria-label="다음 달">›</button></div>
+          <div class="legend sub"><span class="dot ok"></span>정상 <span class="dot warn"></span>지각·조퇴 <span class="dot bad"></span>확인 필요 · 이름이나 날짜를 누르세요</div>
+        </div>
+        <div class="calwrap"><div class="tcal" id="tcal"></div></div>
+      </div>
+
+      <div class="panel" id="day-panel"></div>
+
+      <div class="panel">
+        <div class="spread"><h2>날짜별 한눈에 비교</h2><div class="sub" id="dt-note"></div></div>
+        <div class="tablewrap" id="date-table"></div>
+      </div>
+
+      <div class="panel">
+        <div class="toolbar">
+          <label class="field">월<input type="month" id="m-sel"></label>
+          <label class="field">팀원<select id="m-filter"><option value="">전체</option></select></label>
+          <label class="field" id="f-start" hidden>팀 기본 출근<input type="time" id="s-start" step="60"></label>
+          <label class="field" id="f-end" hidden>팀 기본 퇴근<input type="time" id="s-end" step="60"></label>
+          <button class="btn" id="btn-defaults" hidden>기본 시각 저장</button>
+          <button class="btn" id="btn-add" hidden>기록 추가·보정</button>
+          <button class="btn" id="btn-code" hidden>가입 코드 보기</button>
+          <button class="btn" id="btn-csv">CSV 저장</button>
+        </div>
+        <div id="code-box"></div>
+        <div class="stats" id="team-stats"></div>
+        <h2>팀원별 요약</h2>
+        <div class="tablewrap" id="team-sum"></div>
+      </div>
+
+      <details class="panel">
+        <summary><h2>상세 기록과 보정</h2><span class="sub">보정 이력 · 사유</span></summary>
+        <div class="tablewrap" id="team-list"></div>
+      </details>
+    </section>
+  </div>
+</div>
+<script src="/app.js"></script>
+</body>
+</html>
